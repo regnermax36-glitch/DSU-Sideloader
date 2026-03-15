@@ -39,7 +39,7 @@ class SystemToolsManager {
     )
 
     private val availableTools = mutableMapOf<String, String>()
-    private val toolVersions = mutableMapOf<String, String>()
+    private val toolVersions = mutableMapOf<String, String?>()
 
     data class ToolInfo(
         val name: String,

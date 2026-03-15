@@ -297,18 +297,18 @@ class PackagingStage(
         val binaryContent = """#!/sbin/sh
 # Update binary wrapper for GSI ROM installation
 
-OUTFD=$2
-ZIPFILE=$3
+OUTFD=${'$'}2
+ZIPFILE=${'$'}3
 
 # Function to print to recovery UI
 ui_print() {
-    echo "ui_print $1" > /proc/self/fd/$OUTFD
-    echo "ui_print" > /proc/self/fd/$OUTFD
+    echo "ui_print ${'$'}1" > /proc/self/fd/${'$'}OUTFD
+    echo "ui_print" > /proc/self/fd/${'$'}OUTFD
 }
 
 # Extract and run updater-script
 SCRIPT_PATH="/tmp/updater-script"
-unzip -p "$ZIPFILE" META-INF/com/google/android/updater-script > "$SCRIPT_PATH"
+unzip -p "${'$'}ZIPFILE" META-INF/com/google/android/updater-script > "${'$'}SCRIPT_PATH"
 
 # Execute the script (simplified interpreter)
 ui_print "Starting GSI ROM installation..."

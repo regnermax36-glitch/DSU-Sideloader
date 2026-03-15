@@ -3,10 +3,12 @@ package vegabobo.dsusideloader.porting
 import android.net.Uri
 import android.util.Log
 import java.io.File
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import vegabobo.dsusideloader.core.StorageManager
 import vegabobo.dsusideloader.model.Session
 import vegabobo.dsusideloader.porting.device.DeviceProfile
@@ -92,7 +94,10 @@ class PortingPipeline(
     private suspend fun initializeWorkspace() {
         Log.d(tag, "Initializing workspace...")
 
-        workingDirectory = File(storageManager.getWorkspaceFolder(), "rom_porting_${System.currentTimeMillis()}")
+        // Use external files directory for porting operations
+        val externalFilesDir = storageManager.getExternalFilesDir()
+        
+        workingDirectory = File(externalFilesDir, "rom_porting_${System.currentTimeMillis()}")
         workingDirectory?.mkdirs()
 
         // Create subdirectories
@@ -278,7 +283,10 @@ class PortingPipeline(
      */
     fun cancel() {
         job.cancel()
-        cleanup()
+        // Launch cleanup in a separate coroutine since it's a suspend function
+        GlobalScope.launch {
+            cleanup()
+        }
     }
 }
 
