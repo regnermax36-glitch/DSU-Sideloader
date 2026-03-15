@@ -1,15 +1,15 @@
 package vegabobo.dsusideloader.porting.stages
 
 import android.util.Log
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 import vegabobo.dsusideloader.core.StorageManager
 import vegabobo.dsusideloader.porting.ModifiedGSIData
 import vegabobo.dsusideloader.porting.OutputFormat
 import vegabobo.dsusideloader.porting.PortingException
 import vegabobo.dsusideloader.porting.SystemToolsManager
 import vegabobo.dsusideloader.porting.device.DeviceProfile
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 
 /**
  * Handles packaging of modified GSI into flashable ROM formats
@@ -18,26 +18,26 @@ class PackagingStage(
     private val storageManager: StorageManager,
     private val systemToolsManager: SystemToolsManager,
     private val workingDirectory: File,
-    private val onProgress: (Float) -> Unit
+    private val onProgress: (Float) -> Unit,
 ) {
-    
+
     private val tag = "PackagingStage"
-    
+
     /**
      * Package the modified GSI into the specified output format
      */
     suspend fun packageROM(
         modifiedData: ModifiedGSIData,
         deviceProfile: DeviceProfile,
-        outputFormat: OutputFormat
+        outputFormat: OutputFormat,
     ): String {
         Log.d(tag, "Starting ROM packaging in format: $outputFormat")
-        
+
         val outputDir = File(workingDirectory, "output")
         outputDir.mkdirs()
-        
+
         onProgress(0.1f)
-        
+
         return when (outputFormat) {
             OutputFormat.RECOVERY_ZIP -> packageRecoveryZip(modifiedData, deviceProfile, outputDir)
             OutputFormat.FASTBOOT_IMAGES -> packageFastbootImages(modifiedData, deviceProfile, outputDir)
@@ -45,200 +45,200 @@ class PackagingStage(
             OutputFormat.SYSTEM_IMAGE -> packageSystemImage(modifiedData, deviceProfile, outputDir)
         }
     }
-    
+
     /**
      * Package as recovery flashable ZIP
      */
     private suspend fun packageRecoveryZip(
         modifiedData: ModifiedGSIData,
         deviceProfile: DeviceProfile,
-        outputDir: File
+        outputDir: File,
     ): String {
         Log.d(tag, "Packaging as recovery flashable ZIP...")
-        
+
         val zipWorkDir = File(outputDir, "recovery_zip")
         zipWorkDir.mkdirs()
-        
+
         // Create META-INF directory structure
         val metaInfDir = File(zipWorkDir, "META-INF/com/google/android")
         metaInfDir.mkdirs()
-        
+
         onProgress(0.2f)
-        
+
         // Copy system image
         val systemImageFile = File(zipWorkDir, "system.img")
         copyFile(modifiedData.systemImagePath, systemImageFile.absolutePath)
-        
+
         onProgress(0.4f)
-        
+
         // Create updater-script
         createUpdaterScript(metaInfDir, deviceProfile, modifiedData)
-        
+
         onProgress(0.6f)
-        
+
         // Create update-binary
         createUpdateBinary(metaInfDir)
-        
+
         onProgress(0.7f)
-        
+
         // Create additional files if needed
         createAdditionalFiles(zipWorkDir, deviceProfile, modifiedData)
-        
+
         onProgress(0.8f)
-        
+
         // Create the ZIP file
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val zipFileName = "${deviceProfile.codename}_GSI_ROM_$timestamp.zip"
         val zipFilePath = File(outputDir, zipFileName).absolutePath
-        
+
         val zipResult = systemToolsManager.executeCommand(
-            "cd ${zipWorkDir.absolutePath} && zip -r $zipFilePath ."
+            "cd ${zipWorkDir.absolutePath} && zip -r $zipFilePath .",
         )
-        
+
         if (!zipResult.success) {
             throw PortingException("Failed to create ZIP file: ${zipResult.error}")
         }
-        
+
         onProgress(1.0f)
-        
+
         Log.d(tag, "Recovery ZIP created: $zipFilePath")
         return zipFilePath
     }
-    
+
     /**
      * Package as FastBoot images
      */
     private suspend fun packageFastbootImages(
         modifiedData: ModifiedGSIData,
         deviceProfile: DeviceProfile,
-        outputDir: File
+        outputDir: File,
     ): String {
         Log.d(tag, "Packaging as FastBoot images...")
-        
+
         val fastbootDir = File(outputDir, "fastboot_images")
         fastbootDir.mkdirs()
-        
+
         onProgress(0.2f)
-        
+
         // Copy system image
         val systemImageFile = File(fastbootDir, "system.img")
         copyFile(modifiedData.systemImagePath, systemImageFile.absolutePath)
-        
+
         onProgress(0.5f)
-        
+
         // Create flash script
         createFastbootFlashScript(fastbootDir, deviceProfile)
-        
+
         onProgress(0.8f)
-        
+
         // Create info file
         createDeviceInfoFile(fastbootDir, deviceProfile, modifiedData)
-        
+
         onProgress(1.0f)
-        
+
         Log.d(tag, "FastBoot images created in: ${fastbootDir.absolutePath}")
         return fastbootDir.absolutePath
     }
-    
+
     /**
      * Package as Samsung Odin TAR
      */
     private suspend fun packageOdinTar(
         modifiedData: ModifiedGSIData,
         deviceProfile: DeviceProfile,
-        outputDir: File
+        outputDir: File,
     ): String {
         Log.d(tag, "Packaging as Odin TAR...")
-        
+
         if (deviceProfile.manufacturer.lowercase() != "samsung") {
             throw PortingException("Odin format is only supported for Samsung devices")
         }
-        
+
         val odinWorkDir = File(outputDir, "odin_tar")
         odinWorkDir.mkdirs()
-        
+
         onProgress(0.2f)
-        
+
         // Copy and rename system image for Odin
         val systemImageFile = File(odinWorkDir, "system.img.ext4")
         copyFile(modifiedData.systemImagePath, systemImageFile.absolutePath)
-        
+
         onProgress(0.5f)
-        
+
         // Create additional Odin files if needed
         createOdinFiles(odinWorkDir, deviceProfile)
-        
+
         onProgress(0.7f)
-        
+
         // Create TAR file
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val tarFileName = "${deviceProfile.codename}_GSI_ROM_$timestamp.tar"
         val tarFilePath = File(outputDir, tarFileName).absolutePath
-        
+
         val tarResult = systemToolsManager.executeCommand(
-            "cd ${odinWorkDir.absolutePath} && tar -cf $tarFilePath *.ext4 *.bin"
+            "cd ${odinWorkDir.absolutePath} && tar -cf $tarFilePath *.ext4 *.bin",
         )
-        
+
         if (!tarResult.success) {
             throw PortingException("Failed to create TAR file: ${tarResult.error}")
         }
-        
+
         onProgress(1.0f)
-        
+
         Log.d(tag, "Odin TAR created: $tarFilePath")
         return tarFilePath
     }
-    
+
     /**
      * Package as raw system image
      */
     private suspend fun packageSystemImage(
         modifiedData: ModifiedGSIData,
         deviceProfile: DeviceProfile,
-        outputDir: File
+        outputDir: File,
     ): String {
         Log.d(tag, "Packaging as system image...")
-        
+
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val imageFileName = "${deviceProfile.codename}_GSI_system_$timestamp.img"
         val imageFilePath = File(outputDir, imageFileName).absolutePath
-        
+
         onProgress(0.5f)
-        
+
         // Copy system image
         copyFile(modifiedData.systemImagePath, imageFilePath)
-        
+
         onProgress(1.0f)
-        
+
         Log.d(tag, "System image created: $imageFilePath")
         return imageFilePath
     }
-    
+
     /**
      * Create updater-script for recovery ZIP
      */
     private suspend fun createUpdaterScript(
         metaInfDir: File,
         deviceProfile: DeviceProfile,
-        modifiedData: ModifiedGSIData
+        modifiedData: ModifiedGSIData,
     ) {
         val updaterScript = File(metaInfDir, "updater-script")
-        
+
         val scriptContent = buildString {
             appendLine("# GSI ROM Installation Script")
             appendLine("# Generated for ${deviceProfile.deviceName}")
             appendLine()
-            
+
             // Device verification
             appendLine("assert(getprop(\"ro.product.device\") == \"${deviceProfile.codename}\" ||")
             appendLine("       getprop(\"ro.build.product\") == \"${deviceProfile.codename}\");")
             appendLine()
-            
+
             // Show progress
             appendLine("show_progress(0.1, 0);")
             appendLine("ui_print(\"Installing GSI ROM for ${deviceProfile.deviceName}...\");")
             appendLine()
-            
+
             // Mount system partition
             when (deviceProfile.supportedPartitionLayouts.firstOrNull()) {
                 "A/B" -> {
@@ -251,29 +251,29 @@ class PackagingStage(
                 }
             }
             appendLine()
-            
+
             // Format system partition
             appendLine("show_progress(0.2, 10);")
             appendLine("ui_print(\"Formatting system partition...\");")
             appendLine("format(\"ext4\", \"EMMC\", \"/dev/block/platform/msm_sdcc.1/by-name/system\", \"0\", \"/system\");")
             appendLine()
-            
+
             // Flash system image
             appendLine("show_progress(0.6, 60);")
             appendLine("ui_print(\"Flashing system image...\");")
             appendLine("package_extract_file(\"system.img\", \"/dev/block/platform/msm_sdcc.1/by-name/system\");")
             appendLine()
-            
+
             // Unmount
             appendLine("unmount(\"/system\");")
             appendLine()
-            
+
             // Final steps
             appendLine("show_progress(0.1, 0);")
             appendLine("ui_print(\"Installation completed!\");")
             appendLine("ui_print(\"Device: ${deviceProfile.deviceName}\");")
             appendLine("ui_print(\"ROM: GSI Custom ROM\");")
-            
+
             // Applied modifications info
             if (modifiedData.modifications.isNotEmpty()) {
                 appendLine("ui_print(\"Applied modifications:\");")
@@ -282,16 +282,16 @@ class PackagingStage(
                 }
             }
         }
-        
+
         updaterScript.writeText(scriptContent)
     }
-    
+
     /**
      * Create update-binary for recovery ZIP
      */
     private suspend fun createUpdateBinary(metaInfDir: File) {
         val updateBinary = File(metaInfDir, "update-binary")
-        
+
         // This would typically be a pre-compiled binary
         // For now, create a shell script wrapper
         val binaryContent = """#!/sbin/sh
@@ -319,23 +319,23 @@ ui_print "Installation completed successfully!"
 
 exit 0
 """
-        
+
         updateBinary.writeText(binaryContent)
-        
+
         // Make executable
         val chmodResult = systemToolsManager.executeCommand("chmod 755 ${updateBinary.absolutePath}")
         if (!chmodResult.success) {
             Log.w(tag, "Failed to make update-binary executable: ${chmodResult.error}")
         }
     }
-    
+
     /**
      * Create additional files for recovery ZIP
      */
     private suspend fun createAdditionalFiles(
         zipWorkDir: File,
         deviceProfile: DeviceProfile,
-        modifiedData: ModifiedGSIData
+        modifiedData: ModifiedGSIData,
     ) {
         // Create installation info file
         val infoFile = File(zipWorkDir, "rom_info.txt")
@@ -356,7 +356,7 @@ exit 0
         }
         infoFile.writeText(infoContent)
     }
-    
+
     /**
      * Create FastBoot flash script
      */
@@ -386,13 +386,13 @@ exit 0
             appendLine("echo \"Installation completed successfully!\"")
         }
         flashScript.writeText(scriptContent)
-        
+
         // Make executable
         val chmodResult = systemToolsManager.executeCommand("chmod 755 ${flashScript.absolutePath}")
         if (!chmodResult.success) {
             Log.w(tag, "Failed to make flash script executable: ${chmodResult.error}")
         }
-        
+
         // Create Windows batch file
         val flashBat = File(fastbootDir, "flash.bat")
         val batContent = buildString {
@@ -422,14 +422,14 @@ exit 0
         }
         flashBat.writeText(batContent)
     }
-    
+
     /**
      * Create device info file
      */
     private suspend fun createDeviceInfoFile(
         outputDir: File,
         deviceProfile: DeviceProfile,
-        modifiedData: ModifiedGSIData
+        modifiedData: ModifiedGSIData,
     ) {
         val infoFile = File(outputDir, "device_info.txt")
         val infoContent = buildString {
@@ -460,7 +460,7 @@ exit 0
         }
         infoFile.writeText(infoContent)
     }
-    
+
     /**
      * Create Odin-specific files
      */
@@ -484,7 +484,7 @@ exit 0
         }
         pitInfo.writeText(pitContent)
     }
-    
+
     /**
      * Copy file from source to destination
      */

@@ -3,17 +3,16 @@ package vegabobo.dsusideloader.porting.device
 import android.os.Build
 import android.util.Log
 import vegabobo.dsusideloader.porting.SystemToolsManager
-import vegabobo.dsusideloader.util.DevicePropUtils
 
 /**
  * Detects device information and matches it with appropriate device profiles
  */
 class DeviceDetector(
-    private val systemToolsManager: SystemToolsManager
+    private val systemToolsManager: SystemToolsManager,
 ) {
-    
+
     private val tag = "DeviceDetector"
-    
+
     data class DeviceInfo(
         val manufacturer: String,
         val brand: String,
@@ -27,17 +26,17 @@ class DeviceDetector(
         val bootloaderVersion: String?,
         val kernelVersion: String,
         val selinuxStatus: String,
-        val properties: Map<String, String>
+        val properties: Map<String, String>,
     )
-    
+
     /**
      * Detect current device information
      */
     suspend fun detectDevice(): DeviceInfo {
         Log.d(tag, "Detecting device information...")
-        
+
         val properties = getSystemProperties()
-        
+
         return DeviceInfo(
             manufacturer = Build.MANUFACTURER,
             brand = Build.BRAND,
@@ -51,19 +50,19 @@ class DeviceDetector(
             bootloaderVersion = properties["ro.bootloader"],
             kernelVersion = detectKernelVersion(),
             selinuxStatus = detectSelinuxStatus(),
-            properties = properties
+            properties = properties,
         )
     }
-    
+
     /**
      * Get system properties relevant to ROM porting
      */
     private suspend fun getSystemProperties(): Map<String, String> {
         val properties = mutableMapOf<String, String>()
-        
+
         val importantProps = listOf(
             "ro.product.manufacturer",
-            "ro.product.brand", 
+            "ro.product.brand",
             "ro.product.model",
             "ro.product.device",
             "ro.product.name",
@@ -82,9 +81,9 @@ class DeviceDetector(
             "ro.boot.dynamic_partitions",
             "ro.boot.slot_suffix",
             "ro.treble.enabled",
-            "ro.vndk.version"
+            "ro.vndk.version",
         )
-        
+
         for (prop in importantProps) {
             try {
                 val result = systemToolsManager.executeCommand("getprop $prop")
@@ -95,10 +94,10 @@ class DeviceDetector(
                 Log.w(tag, "Failed to get property $prop: ${e.message}")
             }
         }
-        
+
         return properties
     }
-    
+
     /**
      * Detect device architecture
      */
@@ -121,7 +120,7 @@ class DeviceDetector(
             else -> "arm64-v8a" // Fallback
         }
     }
-    
+
     /**
      * Detect partition layout (A-only vs A/B)
      */
@@ -131,28 +130,28 @@ class DeviceDetector(
         if (abUpdateResult.success && abUpdateResult.output.trim() == "true") {
             return "A/B"
         }
-        
+
         // Check for slot suffix
         val slotSuffixResult = systemToolsManager.executeCommand("getprop ro.boot.slot_suffix")
         if (slotSuffixResult.success && slotSuffixResult.output.trim().isNotEmpty()) {
             return "A/B"
         }
-        
+
         // Check for dynamic partitions
         val dynamicPartitionsResult = systemToolsManager.executeCommand("getprop ro.boot.dynamic_partitions")
         if (dynamicPartitionsResult.success && dynamicPartitionsResult.output.trim() == "true") {
             return "A/B-Dynamic"
         }
-        
+
         // Check if system_a partition exists
         val systemAResult = systemToolsManager.executeCommand("ls /dev/block/by-name/system_a")
         if (systemAResult.success) {
             return "A/B"
         }
-        
+
         return "A-only"
     }
-    
+
     /**
      * Detect kernel version
      */
@@ -164,7 +163,7 @@ class DeviceDetector(
             "Unknown"
         }
     }
-    
+
     /**
      * Detect SELinux status
      */
@@ -176,39 +175,39 @@ class DeviceDetector(
             "Unknown"
         }
     }
-    
+
     /**
      * Find matching device profile for the detected device
      */
     fun findMatchingProfile(deviceInfo: DeviceInfo): DeviceProfile? {
         Log.d(tag, "Finding matching profile for ${deviceInfo.manufacturer} ${deviceInfo.model}")
-        
+
         // Check for exact device match first
         val exactMatch = findExactDeviceMatch(deviceInfo)
         if (exactMatch != null) {
             Log.d(tag, "Found exact device match: ${exactMatch.deviceName}")
             return exactMatch
         }
-        
+
         // Check for manufacturer-specific profile
         val manufacturerMatch = findManufacturerMatch(deviceInfo)
         if (manufacturerMatch != null) {
             Log.d(tag, "Found manufacturer match: ${manufacturerMatch.deviceName}")
             return manufacturerMatch
         }
-        
+
         // Fall back to generic profile
         Log.d(tag, "Using generic profile for ${deviceInfo.architecture}")
         return getGenericProfile(deviceInfo)
     }
-    
+
     /**
      * Find exact device match in predefined profiles
      */
     private fun findExactDeviceMatch(deviceInfo: DeviceInfo): DeviceProfile? {
         // This would be expanded with a database of device profiles
         // For now, we'll check against known devices
-        
+
         return when {
             deviceInfo.manufacturer.lowercase() == "samsung" -> {
                 createSamsungProfileForDevice(deviceInfo)
@@ -216,7 +215,7 @@ class DeviceDetector(
             else -> null
         }
     }
-    
+
     /**
      * Find manufacturer-specific profile
      */
@@ -228,7 +227,7 @@ class DeviceDetector(
             else -> null
         }
     }
-    
+
     /**
      * Get generic profile based on architecture
      */
@@ -239,30 +238,30 @@ class DeviceDetector(
                 codename = deviceInfo.codename,
                 manufacturer = deviceInfo.manufacturer,
                 minAndroidVersion = deviceInfo.androidVersion,
-                supportedPartitionLayouts = listOf(deviceInfo.partitionLayout)
+                supportedPartitionLayouts = listOf(deviceInfo.partitionLayout),
             )
             else -> DeviceProfiles.GENERIC_ARM64 // Fallback
         }
     }
-    
+
     /**
      * Create Samsung-specific profile for detected device
      */
     private fun createSamsungProfileForDevice(deviceInfo: DeviceInfo): DeviceProfile? {
         // Estimate partition sizes based on device model
         val (systemSize, vendorSize) = estimateSamsungPartitionSizes(deviceInfo.model)
-        
+
         return DeviceProfiles.createSamsungProfile(
             deviceName = "${deviceInfo.manufacturer} ${deviceInfo.model}",
             codename = deviceInfo.codename,
             androidVersion = deviceInfo.androidVersion,
             systemSize = systemSize,
-            vendorSize = vendorSize
+            vendorSize = vendorSize,
         ).copy(
-            supportedPartitionLayouts = listOf(deviceInfo.partitionLayout)
+            supportedPartitionLayouts = listOf(deviceInfo.partitionLayout),
         )
     }
-    
+
     /**
      * Create generic Samsung profile
      */
@@ -272,10 +271,10 @@ class DeviceDetector(
             codename = deviceInfo.codename,
             androidVersion = deviceInfo.androidVersion,
             systemSize = 4L * 1024 * 1024 * 1024, // 4GB default
-            vendorSize = 1L * 1024 * 1024 * 1024   // 1GB default
+            vendorSize = 1L * 1024 * 1024 * 1024, // 1GB default
         )
     }
-    
+
     /**
      * Create generic Pixel profile
      */
@@ -295,7 +294,7 @@ class DeviceDetector(
                 isUnlocked = true,
                 verificationDisabled = true,
                 customRecoverySupported = true,
-                flashingMethod = "fastboot"
+                flashingMethod = "fastboot",
             ),
             partitionSizes = PartitionSizes(
                 systemSize = 3L * 1024 * 1024 * 1024,
@@ -304,14 +303,14 @@ class DeviceDetector(
                 bootSize = 64L * 1024 * 1024,
                 recoverySize = 64L * 1024 * 1024,
                 userdataSize = null,
-                cacheSize = null
+                cacheSize = null,
             ),
             requiredModifications = emptyList(),
             optionalModifications = emptyList(),
-            outputFormats = listOf("fastboot", "recovery_zip")
+            outputFormats = listOf("fastboot", "recovery_zip"),
         )
     }
-    
+
     /**
      * Create generic Xiaomi profile
      */
@@ -331,7 +330,7 @@ class DeviceDetector(
                 isUnlocked = false,
                 verificationDisabled = false,
                 customRecoverySupported = true,
-                flashingMethod = "fastboot"
+                flashingMethod = "fastboot",
             ),
             partitionSizes = PartitionSizes(
                 systemSize = 3L * 1024 * 1024 * 1024,
@@ -340,7 +339,7 @@ class DeviceDetector(
                 bootSize = 64L * 1024 * 1024,
                 recoverySize = 64L * 1024 * 1024,
                 userdataSize = null,
-                cacheSize = null
+                cacheSize = null,
             ),
             requiredModifications = listOf(
                 DeviceModification(
@@ -351,26 +350,26 @@ class DeviceDetector(
                     action = ModificationAction.APPEND,
                     parameters = mapOf(
                         "ro.miui.ui.version.name" to "V12",
-                        "ro.product.mod_device" to deviceInfo.codename
-                    )
-                )
+                        "ro.product.mod_device" to deviceInfo.codename,
+                    ),
+                ),
             ),
             optionalModifications = emptyList(),
-            outputFormats = listOf("fastboot", "recovery_zip")
+            outputFormats = listOf("fastboot", "recovery_zip"),
         )
     }
-    
+
     /**
      * Estimate partition sizes for Samsung devices
      */
     private fun estimateSamsungPartitionSizes(model: String): Pair<Long, Long> {
         return when {
-            model.contains("S24", ignoreCase = true) || 
-            model.contains("S23", ignoreCase = true) -> {
+            model.contains("S24", ignoreCase = true) ||
+                model.contains("S23", ignoreCase = true) -> {
                 Pair(6L * 1024 * 1024 * 1024, 2L * 1024 * 1024 * 1024) // 6GB system, 2GB vendor
             }
             model.contains("S22", ignoreCase = true) ||
-            model.contains("S21", ignoreCase = true) -> {
+                model.contains("S21", ignoreCase = true) -> {
                 Pair(5L * 1024 * 1024 * 1024, 1536L * 1024 * 1024) // 5GB system, 1.5GB vendor
             }
             model.contains("Note", ignoreCase = true) -> {
