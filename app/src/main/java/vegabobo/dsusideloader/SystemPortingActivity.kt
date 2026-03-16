@@ -14,49 +14,46 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import vegabobo.dsusideloader.core.SystemImagePorter
 import vegabobo.dsusideloader.model.SystemPortingOptions
-import vegabobo.dsusideloader.ui.maxregner.SystemPortingScreen
-import vegabobo.dsusideloader.ui.theme.MaxRegnerTheme
-import javax.inject.Inject
+import vegabobo.dsusideloader.ui.MaxRegnerTheme
+import vegabobo.dsusideloader.ui.SystemPortingScreen
 
 @AndroidEntryPoint
 class SystemPortingActivity : ComponentActivity() {
-    
+
     @Inject
     lateinit var systemImagePorter: SystemImagePorter
-    
+
     private var selectedImageUri by mutableStateOf<Uri?>(null)
-    
+
     private val imagePickerLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
+        ActivityResultContracts.GetContent(),
     ) { uri ->
         selectedImageUri = uri
     }
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        
+
         setContent {
             MaxRegnerTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     SystemPortingScreen(
-                        systemImagePorter = systemImagePorter,
-                        selectedImageUri = selectedImageUri,
-                        onSelectImage = { imagePickerLauncher.launch("*/*") },
-                        onStartPorting = { uri, options -> startPorting(uri, options) },
-                        onBack = { finish() }
+                        onFileSelected = { },
+                        onPortingOptionsChanged = { },
                     )
                 }
             }
         }
     }
-    
+
     private fun startPorting(uri: Uri, options: SystemPortingOptions) {
         // Start system image porting process
         // This would typically be handled by a ViewModel

@@ -9,29 +9,26 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
-import vegabobo.dsusideloader.ui.maxregner.MaxRegnerSettingsScreen
-import vegabobo.dsusideloader.ui.theme.MaxRegnerTheme
+import vegabobo.dsusideloader.ui.MaxRegnerSettingsScreen
+import vegabobo.dsusideloader.ui.MaxRegnerTheme
 
 @AndroidEntryPoint
 class MaxRegnerSettingsActivity : ComponentActivity() {
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        
+
         setContent {
             MaxRegnerTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
-                    MaxRegnerSettingsScreen(
-                        onBack = { finish() }
-                    )
+                    MaxRegnerSettingsScreen()
                 }
             }
         }
     }
 }
-
