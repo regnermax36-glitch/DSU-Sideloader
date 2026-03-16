@@ -1,24 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme. -->
-    <style name="Theme.DSUHelper" parent="Theme.Material3.DayNight">
-
-        <item name="colorPrimary">@color/system_accent</item>
-        <item name="colorPrimaryDark">@color/system_accent_darker</item>
-        <item name="colorSecondary">@color/system_accent_2</item>
-
-        <item name="colorError">@color/error</item>
-
-        <item name="colorPrimaryVariant">@color/system_accent</item>
-        <item name="colorSecondaryVariant">@color/system_accent_2</item>
-        <item name="scrimBackground">@color/netrual_color</item>
-
-        <item name="colorSurface">@color/netrual_color</item>
-        <item name="colorSecondaryContainer">@color/system_accent_soft</item>
-
-        <item name="android:colorBackground">@color/background</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
-
+    <style name="Theme.MaxRegner" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/maxregner_primary</item>
+        <item name="colorOnPrimary">@color/maxregner_on_primary</item>
+        <item name="colorPrimaryContainer">@color/maxregner_primary_variant</item>
+        <item name="colorOnPrimaryContainer">@color/maxregner_on_primary</item>
+        
+        <item name="colorSecondary">@color/maxregner_secondary</item>
+        <item name="colorOnSecondary">@color/maxregner_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/maxregner_secondary_variant</item>
+        <item name="colorOnSecondaryContainer">@color/maxregner_on_primary</item>
+        
+        <item name="colorTertiary">@color/maxregner_accent</item>
+        <item name="colorOnTertiary">@color/maxregner_on_secondary</item>
+        
+        <item name="android:colorBackground">@color/maxregner_background</item>
+        <item name="colorOnBackground">@color/maxregner_on_background</item>
+        <item name="colorSurface">@color/maxregner_surface</item>
+        <item name="colorOnSurface">@color/maxregner_on_surface</item>
+        
+        <item name="android:statusBarColor">@color/maxregner_background</item>
+        <item name="android:navigationBarColor">@color/maxregner_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 </resources>
