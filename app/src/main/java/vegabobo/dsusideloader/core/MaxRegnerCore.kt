@@ -7,16 +7,16 @@ import javax.inject.Singleton
 
 @Singleton
 class MaxRegnerCore @Inject constructor() {
-    
+
     val isInitialized = mutableStateOf(true)
     val systemInfo = mutableStateOf<Any?>(null)
     val supportedFeatures = mutableStateOf<List<Any>>(emptyList())
-    
+
     fun initialize(context: Context?) {
         // Initialize MaxRegner Core
         isInitialized.value = true
     }
-    
+
     fun cleanup() {
         // Cleanup resources
     }

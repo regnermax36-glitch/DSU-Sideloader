@@ -96,7 +96,7 @@ class PortingPipeline(
 
         // Use external files directory for porting operations
         val externalFilesDir = storageManager.getExternalFilesDir()
-        
+
         workingDirectory = File(externalFilesDir, "rom_porting_${System.currentTimeMillis()}")
         workingDirectory?.mkdirs()
 
