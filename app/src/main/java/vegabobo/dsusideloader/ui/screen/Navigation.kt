@@ -10,12 +10,14 @@ import vegabobo.dsusideloader.core.SystemImagePorter
 import vegabobo.dsusideloader.ui.maxregner.MaxRegnerMainScreen
 import vegabobo.dsusideloader.ui.screen.about.AboutScreen
 import vegabobo.dsusideloader.ui.screen.adb.AdbScreen
+import vegabobo.dsusideloader.ui.screen.home.Home
 import vegabobo.dsusideloader.ui.screen.libraries.LibrariesScreen
 import vegabobo.dsusideloader.ui.screen.settings.Settings
 import vegabobo.dsusideloader.util.PrivilegeManager
 
 object Destinations {
     const val Homepage = "home"
+    const val DSUPorting = "dsu_porting"
     const val Preferences = "preferences"
     const val ADBInstallation = "adb_installation"
     const val About = "about"
@@ -46,8 +48,11 @@ fun Navigation() {
                 systemImagePorter = systemImagePorter,
                 privilegeManager = privilegeManager,
                 onNavigateToSettings = { navigate(Destinations.Preferences) },
-                onNavigateToPorting = { /* Navigate to porting screen */ },
+                onNavigateToPorting = { navigate(Destinations.DSUPorting) },
             )
+        }
+        composable(Destinations.DSUPorting) {
+            Home(navigate = { navigate(it) })
         }
         composable(Destinations.Preferences) { Settings(navigate = { navigate(it) }) }
         composable(Destinations.ADBInstallation) { AdbScreen(navigate = { navigate(it) }) }
