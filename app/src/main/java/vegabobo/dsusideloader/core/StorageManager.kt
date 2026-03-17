@@ -112,9 +112,13 @@ class StorageManager(
         return FilenameUtils.getFilePath(file.uri, false).replace("file://", "")
     }
 
+    fun getExternalFilesDir(): File {
+        return appContext.getExternalFilesDir(null)
+            ?: throw IOException("External files directory is not available")
+    }
+
     fun writeStringToExternalFileDir(content: String, filename: String): String {
-        val externalFilesDir = appContext.getExternalFilesDir(null)
-            ?: throw IOException("externalFilesDir cannot be null.")
+        val externalFilesDir = getExternalFilesDir()
         val newFile = File(externalFilesDir.absolutePath + "/$filename")
         if (newFile.exists()) {
             newFile.delete()
